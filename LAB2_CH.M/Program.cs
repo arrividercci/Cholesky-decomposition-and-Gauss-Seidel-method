@@ -160,10 +160,11 @@ internal class Program
     }
     private static double[] ZeidelMethod(double[,] m, double[] Xn, double e)
     {
-        Console.WriteLine("Перша норма:");
+        Console.WriteLine("1 - Норма:");
         PrintMatrix(Xn, 'x');
         int size = m.GetLength(0);  
         double[] Xn_1 = new double[size];
+        int n = 2;
         do
         {
             for (int k = 0; k < size; k++)
@@ -180,6 +181,9 @@ internal class Program
                 }
                 Xn[i] = (m[i, 3] - temp) / m[i, i]; 
             }
+            Console.WriteLine($"{n} - Норма");
+            PrintMatrix(Xn, 'x');
+            n++;
             if (CalculateOdds(Xn, Xn_1) < e)
             {
                 Console.WriteLine("Остання норма");
@@ -189,8 +193,84 @@ internal class Program
         }
         while (true);
     }
+    private static double[,] CreateNewMatrixWithoutIrowAndJCol(double[,] matrix, int size, int i, int j)
+    {
+        double[,] m = new double[size - 1, size - 1];
+        int r = 0;
+        int p = 0;
+        for(int k = 0; k < size; k++)
+        {
+            if (k == i) continue;
+            else
+            {
+                for (int l = 0; l < size; l++)
+                {
+
+                    if (l == j) continue;
+                    else
+                    {
+                        m[r, p] = matrix[k, l];
+                        p++;
+                    }
+                }
+                p = 0;
+                r++;
+            }
+        }
+        return m;
+    }
+
+    private static double GetDetOfDoubleMatrix(double[,] matrix) 
+    {
+        return matrix[0,0] * matrix[1,0] - matrix[0,1]*matrix[1,0];
+    }
+
+    private static double[,] GetInvertibleMatrix(double[,] m, int size) 
+    {
+        double[,] matrix = new double[size, size];
+        for(int i = 0; i < size; i++)
+        {
+            for(int j = 0; j < size; j++)
+            {
+                matrix[i, j] = Math.Pow(-1, i + j) * GetDetOfDoubleMatrix(CreateNewMatrixWithoutIrowAndJCol(m, size, i, j));
+            }
+        }
+        return matrix;
+    }
+    private static double GetMatrixNorm(double[,] matrix, int size)
+    {
+        double max = 0;
+        for(int i = 0; i < size; i++)
+        {
+            max += Math.Abs(matrix[i, 0]);
+        }
+        for(int i = 1; i < size; i++)
+        {
+            double tempMax = 0;
+            for(int j = 0; j < size; j++)
+            {
+                tempMax += Math.Abs(matrix[j, i]);
+            }
+            if (max < tempMax)
+            {
+                max = tempMax;
+            }
+        }
+        return max;
+    }
+    private static double GetConditionNumber(double[,] matrix, int size)
+    {
+        return GetMatrixNorm(matrix, size) * GetMatrixNorm(GetInvertibleMatrix(matrix, size), size);
+    }
+
+    private static void ShowConditionNumber(double[,] matrix, int size)
+    {
+        double conditionNumber = GetConditionNumber(matrix, size);
+        Console.WriteLine($"Число обумовленості: {conditionNumber}");
+    }
     private static void Main(string[] args)
     {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
         Console.WriteLine("Виберіть метод:");
         Console.WriteLine("1 - Метод квадратичних коренів");
         Console.WriteLine("2 - Метод Зейделя");
@@ -204,6 +284,7 @@ internal class Program
                 Console.Write("Введіть розміри матриці:");
                 n = int.Parse(Console.ReadLine());
                 double[,] m = ReadMatrix(n, n + 1);
+                ShowConditionNumber(m, n);
                 if (IsSymmetrical(m))
                 {
                     double[,] S = new double[n, n];
@@ -229,8 +310,9 @@ internal class Program
                 Console.Write("Введіть розмір матриці:");
                 n = int.Parse(Console.ReadLine());
                 double[,] matrix = ReadMatrix(n, n + 1);
-                if (IsSymmetrical(matrix)) Console.WriteLine("Перша достатня умова збіжності виконується");
-                else Console.WriteLine("Перша достатня умова збіжності не виконується");
+                ShowConditionNumber(matrix, n);
+                if (IsSymmetrical(matrix)) Console.WriteLine("Друга достатня умова збіжності виконується");
+                else Console.WriteLine("Друга достатня умова збіжності не виконується");
                 double[] startX = new double[n];
                 Console.Write("Введіть початкове наближення:");
                 string[] start = Console.ReadLine().Split(' ');
